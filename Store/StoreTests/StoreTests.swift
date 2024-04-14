@@ -6,7 +6,6 @@
 //
 
 import XCTest
-
 final class StoreTests: XCTestCase {
 
     var register = Register()
@@ -35,14 +34,29 @@ Beans (8oz Can): $1.99
 ------------------
 TOTAL: $1.99
 """
+        print(receipt.output())
         XCTAssertEqual(expectedReceipt, receipt.output())
     }
     
+    //New test for how the receipt will be printed for 3 items that are the same
     func testThreeSameItems() {
         register.scan(Item(name: "Beans (8oz Can)", priceEach: 199))
         register.scan(Item(name: "Beans (8oz Can)", priceEach: 199))
         register.scan(Item(name: "Beans (8oz Can)", priceEach: 199))
         XCTAssertEqual(199 * 3, register.subtotal())
+        
+        let receipt = register.total()
+        XCTAssertEqual(199 * 3, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Beans (8oz Can): $1.99
+Beans (8oz Can): $1.99
+Beans (8oz Can): $1.99
+------------------
+TOTAL: $5.97
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
     }
     
     func testThreeDifferentItems() {
@@ -63,6 +77,55 @@ Pencil: $0.99
 Granols Bars (Box, 8ct): $4.99
 ------------------
 TOTAL: $7.97
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
+    
+    //New test for two same items and 1 different item
+    func testTwoSameOneDifferent() {
+        register.scan(Item(name: "Strawberry (2 pounds)", priceEach: 399))
+        XCTAssertEqual(399, register.subtotal())
+        register.scan(Item(name: "Granols Bars (Box, 8ct)", priceEach: 499))
+        XCTAssertEqual(898, register.subtotal())
+        register.scan(Item(name: "Granols Bars (Box, 8ct)", priceEach: 499))
+        XCTAssertEqual(1397, register.subtotal())
+        
+        let receipt = register.total()
+        XCTAssertEqual(1397, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Strawberry (2 pounds): $3.99
+Granols Bars (Box, 8ct): $4.99
+Granols Bars (Box, 8ct): $4.99
+------------------
+TOTAL: $13.97
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
+    
+    //New test scanning 2 same items in different order and 2 different items
+    func testTwoAlternativeTwoDifferent() {
+        register.scan(Item(name: "Lettuce", priceEach: 329))
+        XCTAssertEqual(329, register.subtotal())
+        register.scan(Item(name: "Mango (1 count)", priceEach: 299))
+        XCTAssertEqual(628, register.subtotal())
+        register.scan(Item(name: "Cucumber", priceEach: 199))
+        XCTAssertEqual(827, register.subtotal())
+        register.scan(Item(name: "Mango (1 count)", priceEach: 299))
+        XCTAssertEqual(1126, register.subtotal())
+        
+        let receipt = register.total()
+        XCTAssertEqual(1126, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Lettuce: $3.29
+Mango (1 count): $2.99
+Cucumber: $1.99
+Mango (1 count): $2.99
+------------------
+TOTAL: $11.26
 """
         XCTAssertEqual(expectedReceipt, receipt.output())
     }
