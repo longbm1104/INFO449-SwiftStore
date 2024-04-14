@@ -12,6 +12,19 @@ protocol SKU {
     func price() -> Int
 }
 
+protocol PricingScheme {
+    func adjustPrice(_ count: Int, _ unitPrice: Int) -> Int
+}
+
+class TwoForOnePricingScheme: PricingScheme {
+    func adjustPrice(_ count: Int, _ unitPrice: Int) -> Int {
+        let groupOfThree: Int = count / 3
+        let remainder: Int = count % 3
+        
+        return groupOfThree * 2 * unitPrice  + remainder * unitPrice
+    }
+}
+
 class Item: SKU {
     var name: String
     var itemPrice: Int
@@ -28,7 +41,8 @@ class Item: SKU {
 
 class Receipt {
     var itemsList: [SKU] = []
-    var subTotal: Int = 0
+    var nameToCount: Dictionary<String, Int> = Dictionary<String, Int>()
+    var finalTotal: Int = 0
     
     func items() -> [SKU] {
         return self.itemsList
@@ -48,27 +62,43 @@ class Receipt {
     
     func addItem(item: SKU) {
         self.itemsList.append(item)
-        self.subTotal += item.price()
+        let name = item.name
+        
+        if (nameToCount[name] == nil) {
+            nameToCount[name] = 0
+        }
+        
+        nameToCount[name]! += 1
     }
     
     func total() -> Int {
-        return self.subTotal
+        return self.finalTotal
     }
 }
 
 class Register {
     var receipt: Receipt = Receipt()
+    var subTotal: Int = 0
+    var priceScheme: PricingScheme? = nil
     
     
     func scan(_ item: SKU) {
         receipt.addItem(item: item)
+        
+        if (priceScheme == nil) {
+            self.subTotal += item.price()
+        } else {
+            let count = self.receipt.nameToCount[item.name]!
+            self.subTotal += (priceScheme!.adjustPrice(count, item.price()) - priceScheme!.adjustPrice(count - 1, item.price()))
+        }
     }
     
     func subtotal() -> Int {
-        return self.receipt.total()
+        return self.subTotal
     }
     
     func total() -> Receipt {
+        self.receipt.finalTotal = self.subTotal
         return self.receipt
     }
     
