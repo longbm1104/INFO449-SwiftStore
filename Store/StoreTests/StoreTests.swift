@@ -261,4 +261,126 @@ TOTAL: $15.96
 """
         XCTAssertEqual(expectedReceipt, receipt.output())
     }
+    
+    // Test function to apply coupon for eligible item
+    func testCouponDiscountForOneItem() {
+        let coupon = Coupon(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
+        register.coupon = coupon
+        
+        register.scan(Item(name: "Cucumber", priceEach: 199))
+        XCTAssertEqual(169, register.subtotal())
+    
+        let receipt = register.total()
+        XCTAssertEqual(169, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Cucumber: $1.99
+------------------
+TOTAL: $1.69
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
+    
+    // Test function to apply coupon for eligible item with complicate name
+    func testCouponDiscountForComplicatedNameItems() {
+        let coupon = Coupon(name: "Beans Rolling Down The Hill", discount: 0.15, itemName: "beans")
+        register.coupon = coupon
+        
+        register.scan(Item(name: "Beans (8oz Can)", priceEach: 199))
+        XCTAssertEqual(169, register.subtotal())
+    
+        let receipt = register.total()
+        XCTAssertEqual(169, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Beans (8oz Can): $1.99
+------------------
+TOTAL: $1.69
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
+    
+    // Test function to apply coupon for two eligible items and only one of them should get the discount
+    func testCouponDiscountForTwoSameItems() {
+        let coupon = Coupon(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
+        register.coupon = coupon
+        
+        register.scan(Item(name: "Cucumber", priceEach: 199))
+        XCTAssertEqual(169, register.subtotal())
+        
+        register.scan(Item(name: "Cucumber", priceEach: 199))
+        XCTAssertEqual(368, register.subtotal())
+    
+        let receipt = register.total()
+        XCTAssertEqual(368, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Cucumber: $1.99
+Cucumber: $1.99
+------------------
+TOTAL: $3.68
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
+    
+    // Test function to apply coupon for correct eligible item
+    func testCouponDiscountForTwoDifferentItems() {
+        let coupon = Coupon(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
+        register.coupon = coupon
+        
+        let twoForOnePromo = TwoForOnePricingScheme()
+        register.priceScheme = twoForOnePromo
+        
+        register.scan(Item(name: "Cucumber", priceEach: 199))
+        XCTAssertEqual(169, register.subtotal()) // Coupon kick in
+        
+        register.scan(ItemByWeight(name: "Chicken", priceEach: 199, weight: 1.0))
+        XCTAssertEqual(368, register.subtotal()) // Coupon will not kick in
+        
+        let receipt = register.total()
+        XCTAssertEqual(368, receipt.total())
+        
+        let expectedReceipt = """
+Receipt:
+Cucumber: $1.99
+Chicken ($1.99/lbs): $1.99
+------------------
+TOTAL: $3.68
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
+    
+    // Test function to apply coupon to eligible item combine with 2 for 1 purchase scheme
+    func testCouponDiscountForThreeSameWithTwoForOneItems() {
+        let coupon = Coupon(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
+        register.coupon = coupon
+        
+        let twoForOnePromo = TwoForOnePricingScheme()
+        register.priceScheme = twoForOnePromo
+        
+        register.scan(Item(name: "Cucumber", priceEach: 199))
+        XCTAssertEqual(169, register.subtotal()) // Coupon kick in
+        
+        register.scan(Item(name: "Cucumber", priceEach: 199))
+        XCTAssertEqual(368, register.subtotal()) // Coupon will not kick in
+        
+        register.scan(Item(name: "Cucumber", priceEach: 199))
+        XCTAssertEqual(368, register.subtotal()) // Coupon will not kick in and 2 for 1 will kick in
+    
+        let receipt = register.total()
+        XCTAssertEqual(368, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Cucumber: $1.99
+Cucumber: $1.99
+Cucumber: $1.99
+------------------
+TOTAL: $3.68
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
 }

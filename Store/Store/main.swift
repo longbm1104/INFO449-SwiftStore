@@ -101,16 +101,45 @@ class Receipt {
     }
 }
 
+class Coupon {
+    var name: String
+    var discount: Double
+    var itemName: String
+    var isUsed: Bool = false
+    
+    init(name: String, discount: Double, itemName: String)  {
+        self.name = name
+        self.discount = discount
+        self.itemName = itemName
+    }
+    
+    func applied(item: SKU) -> Int {
+        if (isEligible(item.name.lowercased()) && !isUsed) {
+            isUsed = true
+            return Int(Double(item.price()) * (1.0 - discount))
+        }
+        
+        return item.price()
+    }
+    
+    func isEligible(_ itemName: String) -> Bool {
+        return itemName.contains(itemName) && !isUsed
+    }
+}
+
 class Register {
     var receipt: Receipt = Receipt()
     var subTotal: Int = 0
     var priceScheme: PricingScheme? = nil
+    var coupon: Coupon? = nil
     
     
     func scan(_ item: SKU) {
         receipt.addItem(item: item)
         
-        if (priceScheme == nil) {
+        if (coupon != nil && coupon!.isEligible(item.name)) {
+            self.subTotal += coupon!.applied(item: item)
+        } else if (priceScheme == nil) {
             self.subTotal += item.price()
         } else {
             let count = self.receipt.nameToCount[item.name]!
