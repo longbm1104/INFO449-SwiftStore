@@ -34,7 +34,6 @@ Beans (8oz Can): $1.99
 ------------------
 TOTAL: $1.99
 """
-        print(receipt.output())
         XCTAssertEqual(expectedReceipt, receipt.output())
     }
     
@@ -216,6 +215,49 @@ Beans (8oz Can): $1.99
 Cucumber: $1.99
 ------------------
 TOTAL: $8.96
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
+    
+    // Test function to buy weight items only
+    func testItemsWithWeight() {
+        register.scan(ItemByWeight(name: "Beef", priceEach: 599, weight: 2.0))
+        register.scan(ItemByWeight(name: "Chicken", priceEach: 199, weight: 1.0))
+        XCTAssertEqual(1397, register.subtotal()) // The promo should not kick in yet
+
+        let receipt = register.total()
+        XCTAssertEqual(1397, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Beef ($5.99/lbs): $11.98
+Chicken ($1.99/lbs): $1.99
+------------------
+TOTAL: $13.97
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
+    
+    
+    // Test function to buy weight items with non-weight item
+    func testMixedItemsType() {
+        register.scan(ItemByWeight(name: "Beef", priceEach: 599, weight: 2.0))
+        register.scan(ItemByWeight(name: "Chicken", priceEach: 199, weight: 1.0))
+        XCTAssertEqual(1397, register.subtotal())
+        
+        register.scan(Item(name: "Cucumber", priceEach: 199))
+        XCTAssertEqual(1596, register.subtotal())
+    
+        let receipt = register.total()
+        XCTAssertEqual(1596, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Beef ($5.99/lbs): $11.98
+Chicken ($1.99/lbs): $1.99
+Cucumber: $1.99
+------------------
+TOTAL: $15.96
 """
         XCTAssertEqual(expectedReceipt, receipt.output())
     }

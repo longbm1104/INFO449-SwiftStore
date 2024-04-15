@@ -10,6 +10,7 @@ import Foundation
 protocol SKU {
     var name: String {get}
     func price() -> Int
+    func toString() -> String
 }
 
 protocol PricingScheme {
@@ -37,6 +38,30 @@ class Item: SKU {
     func price() -> Int{
         return self.itemPrice
     }
+    
+    func toString() -> String {
+        return "\(name): $\(Float(itemPrice) / 100.0)"
+    }
+}
+
+class ItemByWeight: SKU {
+    var name: String
+    var itemPrice: Int
+    var weight: Double
+    
+    init(name: String, priceEach: Int, weight: Double=1.0) {
+        self.name = name
+        self.itemPrice = priceEach
+        self.weight = weight
+    }
+    
+    func price() -> Int{
+        return Int(Double(self.itemPrice) * weight)
+    }
+    
+    func toString() -> String {
+        return "\(name) ($\(Float(itemPrice) / 100.0)/lbs): $\(Float(price()) / 100.0)"
+    }
 }
 
 class Receipt {
@@ -52,7 +77,7 @@ class Receipt {
         var receiptStr = "Receipt:"
         
         for item in itemsList {
-            receiptStr += "\n\(item.name): $\(Float(item.price()) / 100.0)"
+            receiptStr += "\n\(item.toString())"
         }
         
         receiptStr += "\n------------------\nTOTAL: $\(Float(total()) / 100.0)"
