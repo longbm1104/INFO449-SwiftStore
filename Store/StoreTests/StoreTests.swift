@@ -264,7 +264,7 @@ TOTAL: $15.96
     
     // Test function to apply coupon for eligible item
     func testCouponDiscountForOneItem() {
-        let coupon = Coupon(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
+        let coupon = Discount(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
         register.coupon = coupon
         
         register.scan(Item(name: "Cucumber", priceEach: 199))
@@ -276,6 +276,7 @@ TOTAL: $15.96
         let expectedReceipt = """
 Receipt:
 Cucumber: $1.99
+Applied Coupon 'Cucumber Down The Hill' to your order
 ------------------
 TOTAL: $1.69
 """
@@ -284,7 +285,7 @@ TOTAL: $1.69
     
     // Test function to apply coupon for eligible item with complicate name
     func testCouponDiscountForComplicatedNameItems() {
-        let coupon = Coupon(name: "Beans Rolling Down The Hill", discount: 0.15, itemName: "beans")
+        let coupon = Discount(name: "Beans Rolling Down The Hill", discount: 0.15, itemName: "beans")
         register.coupon = coupon
         
         register.scan(Item(name: "Beans (8oz Can)", priceEach: 199))
@@ -296,6 +297,7 @@ TOTAL: $1.69
         let expectedReceipt = """
 Receipt:
 Beans (8oz Can): $1.99
+Applied Coupon 'Beans Rolling Down The Hill' to your order
 ------------------
 TOTAL: $1.69
 """
@@ -304,7 +306,7 @@ TOTAL: $1.69
     
     // Test function to apply coupon for two eligible items and only one of them should get the discount
     func testCouponDiscountForTwoSameItems() {
-        let coupon = Coupon(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
+        let coupon = Discount(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
         register.coupon = coupon
         
         register.scan(Item(name: "Cucumber", priceEach: 199))
@@ -320,6 +322,7 @@ TOTAL: $1.69
 Receipt:
 Cucumber: $1.99
 Cucumber: $1.99
+Applied Coupon 'Cucumber Down The Hill' to your order
 ------------------
 TOTAL: $3.68
 """
@@ -328,7 +331,7 @@ TOTAL: $3.68
     
     // Test function to apply coupon for correct eligible item
     func testCouponDiscountForTwoDifferentItems() {
-        let coupon = Coupon(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
+        let coupon = Discount(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
         register.coupon = coupon
         
         let twoForOnePromo = TwoForOnePricingScheme()
@@ -347,6 +350,7 @@ TOTAL: $3.68
 Receipt:
 Cucumber: $1.99
 Chicken ($1.99/lbs): $1.99
+Applied Coupon 'Cucumber Down The Hill' to your order
 ------------------
 TOTAL: $3.68
 """
@@ -355,7 +359,7 @@ TOTAL: $3.68
     
     // Test function to apply coupon to eligible item combine with 2 for 1 purchase scheme
     func testCouponDiscountForThreeSameWithTwoForOneItems() {
-        let coupon = Coupon(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
+        let coupon = Discount(name: "Cucumber Down The Hill", discount: 0.15, itemName: "cucumber")
         register.coupon = coupon
         
         let twoForOnePromo = TwoForOnePricingScheme()
@@ -378,8 +382,52 @@ Receipt:
 Cucumber: $1.99
 Cucumber: $1.99
 Cucumber: $1.99
+Applied Coupon 'Cucumber Down The Hill' to your order
 ------------------
 TOTAL: $3.68
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
+    
+    // Test function to apply rain check for one eligible weight item
+    // Note that the print receipt will print the price before apply the coupon
+    func testRainCheckForOneWeightedItem() {
+        let rainCheck = RainCheck(name: "Beef Rain Check", coverage: 2.0, itemName: "beef", replacePrice: 399)
+        register.coupon = rainCheck
+        
+        register.scan(ItemByWeight(name: "Beef", priceEach: 599, weight: 2.0))
+        XCTAssertEqual(798, register.subtotal())
+    
+        let receipt = register.total()
+        XCTAssertEqual(798, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Beef ($5.99/lbs): $11.98
+Applied Coupon 'Beef Rain Check' to your order
+------------------
+TOTAL: $7.98
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+    }
+    
+    // Test function to apply rain check for one eligible weighted item with the weight higher than the rain check value
+    func testRainCheckForOneBiggerWeightedItem() {
+        let rainCheck = RainCheck(name: "Beef Rain Check", coverage: 2.0, itemName: "beef", replacePrice: 399)
+        register.coupon = rainCheck
+        
+        register.scan(ItemByWeight(name: "Beef", priceEach: 599, weight: 3.0))
+        XCTAssertEqual(1397, register.subtotal())
+    
+        let receipt = register.total()
+        XCTAssertEqual(1397, receipt.total())
+
+        let expectedReceipt = """
+Receipt:
+Beef ($5.99/lbs): $17.97
+Applied Coupon 'Beef Rain Check' to your order
+------------------
+TOTAL: $13.97
 """
         XCTAssertEqual(expectedReceipt, receipt.output())
     }

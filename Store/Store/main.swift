@@ -17,6 +17,15 @@ protocol PricingScheme {
     func adjustPrice(_ count: Int, _ unitPrice: Int) -> Int
 }
 
+protocol Coupon {
+    var name: String {get}
+    var itemName: String {get}
+    var isUsed: Bool {get}
+    
+    func applied(item: SKU) -> Int
+    func isEligible(_ itemName: String) -> Bool
+}
+
 class TwoForOnePricingScheme: PricingScheme {
     func adjustPrice(_ count: Int, _ unitPrice: Int) -> Int {
         let groupOfThree: Int = count / 3
@@ -68,6 +77,7 @@ class Receipt {
     var itemsList: [SKU] = []
     var nameToCount: Dictionary<String, Int> = Dictionary<String, Int>()
     var finalTotal: Int = 0
+    var couponName: String? = nil
     
     func items() -> [SKU] {
         return self.itemsList
@@ -80,7 +90,13 @@ class Receipt {
             receiptStr += "\n\(item.toString())"
         }
         
-        receiptStr += "\n------------------\nTOTAL: $\(Float(total()) / 100.0)"
+        var couponDisplay = ""
+        
+        if couponName != nil {
+            couponDisplay = "\nApplied Coupon '\(couponName!)' to your order"
+        }
+        
+        receiptStr += "\(couponDisplay)\n------------------\nTOTAL: $\(Float(total()) / 100.0)"
         
         return receiptStr
     }
@@ -101,7 +117,7 @@ class Receipt {
     }
 }
 
-class Coupon {
+class Discount: Coupon {
     var name: String
     var discount: Double
     var itemName: String
@@ -127,6 +143,48 @@ class Coupon {
     }
 }
 
+class RainCheck: Coupon {
+    var name: String
+    var coverage: Double
+    var replacePrice: Int
+    var itemName: String
+    var isUsed: Bool = false
+    
+    init(name: String, coverage: Double, itemName: String, replacePrice: Int)  {
+        self.name = name
+        self.coverage = coverage
+        self.itemName = itemName
+        self.replacePrice = replacePrice
+    }
+    
+    func applied(item: SKU) -> Int {
+        if (isEligible(item.name.lowercased()) && !isUsed) {
+            if let itemByWeight = item as? ItemByWeight {
+                let amountApply: Double
+                
+                if (self.coverage <= itemByWeight.weight) {
+                    amountApply = self.coverage
+                } else {
+                    amountApply = itemByWeight.weight
+                }
+                self.coverage -= amountApply
+                
+                if (self.coverage <= 0) {
+                    isUsed = true
+                }
+                
+                return Int(Double(replacePrice) * amountApply + Double(itemByWeight.itemPrice) * abs(itemByWeight.weight - amountApply))
+            }
+        }
+        
+        return item.price()
+    }
+    
+    func isEligible(_ itemName: String) -> Bool {
+        return self.itemName == itemName && !isUsed
+    }
+}
+
 class Register {
     var receipt: Receipt = Receipt()
     var subTotal: Int = 0
@@ -137,8 +195,9 @@ class Register {
     func scan(_ item: SKU) {
         receipt.addItem(item: item)
         
-        if (coupon != nil && coupon!.isEligible(item.name)) {
+        if (coupon != nil && coupon!.isEligible(item.name.lowercased())) {
             self.subTotal += coupon!.applied(item: item)
+            self.receipt.couponName = coupon!.name
         } else if (priceScheme == nil) {
             self.subTotal += item.price()
         } else {
